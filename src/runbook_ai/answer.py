@@ -5,7 +5,7 @@ import ollama
 from .search import Retriever
 
 CHAT_MODEL = "llama3.2:3b"
-MIN_SCORE = 0.5  # placeholder: we will calibrate this with real questions
+MIN_SCORE = 0.62  # chosen from the gap between in-scope and out-of-scope scores
 
 NO_ANSWER = (
     "I couldn't find this in the IT guides. "
