@@ -8,7 +8,7 @@ import ollama
 from .chunker import Chunk
 
 EMBED_MODEL = "nomic-embed-text"
-
+MIN_RELEVANCE = 0.62
 
 def embed_texts(texts: list[str], batch_size: int = 32) -> np.ndarray:
     """Turn texts into a matrix: one row of numbers per text (in small batches)."""
@@ -78,7 +78,7 @@ class Retriever:
 
     def search(self, query: str, k: int = 3) -> list[tuple[Chunk, float]]:
         """Return the top-k (chunk, score) pairs, best first."""
-        if self.matrix is None:
+        if self.matrix is None or not self.chunks or k <= 0:
             return []
         q = _normalize(self.embed_fn([f"search_query: {query}"]))[0]
         scores = self.matrix @ q                  # one score per chunk
@@ -104,8 +104,12 @@ class Retriever:
         if not meta.exists():
             return retriever
         chunks = [Chunk(**d) for d in json.loads(meta.read_text(encoding="utf-8"))]
-        if chunks and vectors.exists():
-            matrix = np.load(vectors)
-            if len(matrix) == len(chunks):        # ignore a damaged index
-                retriever.chunks, retriever.matrix = chunks, matrix
+        if not chunks:
+            return retriever
+        if not vectors.exists():
+            raise ValueError("The saved document index is missing its vectors.npy file.")
+        matrix = np.load(vectors, allow_pickle=False)
+        if matrix.ndim != 2 or len(matrix) != len(chunks):
+            raise ValueError("The saved document index has mismatched chunk and vector data.")
+        retriever.chunks, retriever.matrix = chunks, matrix
         return retriever
