@@ -112,7 +112,7 @@ if "pending" in st.session_state:
 
 if prompt:
     st.session_state.messages.append({"role": "user", "text": prompt})
-    with st.chat_message("user"):
+    with st.chat_message("user", avatar=AVATARS["user"]):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
