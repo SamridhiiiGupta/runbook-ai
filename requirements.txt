@@ -1,6 +1,1 @@
-ollama
-numpy
-pytest
-streamlit
-pypdf
-python-docx
+-e .[dev]
