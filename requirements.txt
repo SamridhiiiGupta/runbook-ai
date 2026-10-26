@@ -1,5 +1,6 @@
 ollama
 numpy
 pytest
-streamlitpypdf
+streamlit
+pypdf
 python-docx
