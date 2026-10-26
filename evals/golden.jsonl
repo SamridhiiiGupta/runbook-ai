@@ -1,0 +1,15 @@
+{"id":"vpn-error-809","question":"My VPN shows error 809. What should I try?","expected_sources":["vpn_access.md"],"expected_tools":["search_docs"],"category":"factual","expected_answer_contains":["hotspot"]}
+{"id":"vpn-install","question":"How do I install the VPN client?","expected_sources":["vpn_access.md"],"expected_tools":["search_docs"],"category":"factual","expected_answer_contains":["AcmeConnect"]}
+{"id":"vpn-connecting","question":"The VPN is stuck on Connecting. What can I do?","expected_sources":["vpn_access.md"],"expected_tools":["search_docs"],"category":"factual","expected_answer_contains":["restart"]}
+{"id":"password-rules","question":"What are the rules for my work password?","expected_sources":["password_reset.md"],"expected_tools":["search_docs"],"category":"factual","expected_answer_contains":["12 characters"]}
+{"id":"locked-account","question":"My work account is locked. How long does it stay locked?","expected_sources":["password_reset.md"],"expected_tools":["search_docs"],"category":"factual","expected_answer_contains":["30 minutes"]}
+{"id":"reset-password","question":"How do I reset my work password?","expected_sources":["password_reset.md"],"expected_tools":["search_docs"],"category":"factual","expected_answer_contains":["selfservice.acme.example"]}
+{"id":"printer-missing","question":"My laptop cannot find the printer. What should I check?","expected_sources":["printer_troubleshooting.md"],"expected_tools":["search_docs"],"category":"factual","expected_answer_contains":["office Wi-Fi"]}
+{"id":"paper-jam","question":"There is paper jammed in the printer. What is the safe way to remove it?","expected_sources":["printer_troubleshooting.md"],"expected_tools":["search_docs"],"category":"factual","expected_answer_contains":["sharp tools"]}
+{"id":"queue-stuck","question":"A print job is stuck in the queue. How do I clear it?","expected_sources":["printer_troubleshooting.md"],"expected_tools":["search_docs"],"category":"factual","expected_answer_contains":["Print Spooler"]}
+{"id":"out-of-scope","question":"What is the capital of France?","expected_sources":[],"expected_tools":["search_docs"],"category":"unanswerable","expected_answer_contains":["couldn't find"]}
+{"id":"unlisted-wifi","question":"What is the office Wi-Fi password?","expected_sources":[],"expected_tools":["search_docs"],"category":"unanswerable","expected_answer_contains":["couldn't find"]}
+{"id":"calculator","question":"What is 18 percent of 250?","expected_sources":[],"expected_tools":["calculator"],"category":"tool","expected_answer_contains":["45"]}
+{"id":"date","question":"What weekday is 2026-10-26?","expected_sources":[],"expected_tools":["get_date_info"],"category":"tool","expected_answer_contains":["Monday"]}
+{"id":"ticket-draft","question":"Create a local ticket draft about my printer being unavailable.","expected_sources":[],"expected_tools":["create_ticket_draft"],"category":"tool","expected_answer_contains":["not been submitted"]}
+{"id":"greeting","question":"Hi there!","expected_sources":[],"expected_tools":[],"category":"no_tool","expected_answer_contains":["Runbook AI"]}
