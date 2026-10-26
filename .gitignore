@@ -1,6 +1,12 @@
 .venv/
+.venv*/
+.codex-packages/
 __pycache__/
 *.pyc
 .env
 .pytest_cache/
 data/index/
+data/conversations.sqlite3
+evals/reports/
+build/
+.streamlit/secrets.toml
