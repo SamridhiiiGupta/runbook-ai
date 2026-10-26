@@ -5,9 +5,10 @@ from pathlib import Path
 @dataclass
 class Chunk:
     """One piece of a document, plus where it came from."""
-    source: str   # file name, e.g. "vpn_access.md"
-    section: str  # heading, e.g. "VPN troubleshooting"
-    text: str     # the actual content
+    source: str                # file name, e.g. "vpn_access.md"
+    section: str               # heading or page label, e.g. "Page 4"
+    text: str                  # the actual content
+    page: int | None = None    # page number when the file has pages
 
 
 def split_into_chunks(text: str, source: str) -> list[Chunk]:
