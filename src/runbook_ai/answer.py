@@ -77,5 +77,7 @@ def answer_question(
         return Answer(NO_ANSWER, [], grounded=False)
 
     text = chat_fn(build_messages(question, hits))
+    if _is_refusal(text):
+        return Answer(text, [], grounded=False)
     sources = [Source(c.source, c.section, s) for c, s in hits]
     return Answer(text, sources, grounded=True)
