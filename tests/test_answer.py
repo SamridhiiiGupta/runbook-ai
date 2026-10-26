@@ -38,3 +38,12 @@ def test_prompt_contains_numbered_context():
 def test_empty_question_is_handled():
     result = answer_question("   ", FakeRetriever([]), chat_fn=lambda m: "x")
     assert result.grounded is False
+
+def test_model_refusal_hides_sources():
+    retriever = FakeRetriever([(CHUNK, 0.9)])
+    result = answer_question(
+        "slack password", retriever,
+        chat_fn=lambda m: "I don't know based on the IT guides.",
+    )
+    assert result.grounded is False
+    assert result.sources == []
