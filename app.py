@@ -33,6 +33,7 @@ EXAMPLES = [
     "How long must my password be?",
 ]
 
+AVATARS = {"user": "🧑‍💻", "assistant": "🛠️"}
 
 @st.cache_resource(show_spinner="Indexing the IT guides on your laptop...")
 def get_retriever() -> Retriever:
@@ -99,7 +100,7 @@ if not st.session_state.messages:
             "I will say so instead of guessing.")
 
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
+    with st.chat_message(msg["role"], avatar=AVATARS[msg["role"]]):
         if msg["role"] == "user":
             st.markdown(msg["text"])
         else:
