@@ -56,6 +56,11 @@ def ollama_chat(messages: list[dict]) -> str:
     return response["message"]["content"]
 
 
+def _is_refusal(text: str) -> bool:
+    """True if the model said it doesn't know (so sources shouldn't be shown)."""
+    cleaned = text.strip().lower().replace("\u2019", "'")
+    return cleaned.startswith("i don't know")
+
 def answer_question(
     question: str,
     retriever: Retriever,
