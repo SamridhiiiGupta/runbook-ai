@@ -1,10 +1,18 @@
+import html
+import time
+from pathlib import Path
+
 import streamlit as st
 
 from runbook_ai.answer import CHAT_MODEL, answer_question
 from runbook_ai.chunker import load_runbooks
+from runbook_ai.ingest import ALLOWED, IngestError, ingest_bytes
 from runbook_ai.search import EMBED_MODEL, Retriever
 
 st.set_page_config(page_title="Runbook AI", page_icon="🛠️", layout="centered")
+
+INDEX_DIR = "data/index"
+UPLOAD_TYPES = [ext.lstrip(".") for ext in sorted(ALLOWED)]
 
 CSS = """
 <style>
@@ -32,18 +40,26 @@ EXAMPLES = [
     "The printer says it is not found",
     "How long must my password be?",
 ]
-
 AVATARS = {"user": "🧑‍💻", "assistant": "🛠️"}
 
-@st.cache_resource(show_spinner="Indexing the IT guides on your laptop...")
+st.session_state.setdefault("messages", [])
+st.session_state.setdefault("uploader_n", 0)
+st.session_state.setdefault("notices", [])
+
+
+@st.cache_resource(show_spinner="Loading the document library...")
 def get_retriever() -> Retriever:
-    return Retriever(load_runbooks("data/runbooks"))
+    retriever = Retriever.load(INDEX_DIR)
+    if not Path(INDEX_DIR, "chunks.json").exists():   # first run: add sample guides
+        retriever.add_chunks(load_runbooks("data/runbooks"))
+        retriever.save(INDEX_DIR)
+    return retriever
 
 
 def render_assistant(msg: dict) -> None:
     """Draw one assistant message: badge, answer text, and sources."""
     if msg["grounded"]:
-        st.markdown('<span class="badge badge-ok">Answered from IT guides</span>',
+        st.markdown('<span class="badge badge-ok">Answered from your documents</span>',
                     unsafe_allow_html=True)
     else:
         st.markdown('<span class="badge badge-no">No answer found</span>',
@@ -54,15 +70,75 @@ def render_assistant(msg: dict) -> None:
             for s in msg["sources"]:
                 pct = max(0, min(100, int(s["score"] * 100)))
                 st.markdown(
-                    f'<div class="src"><b>{s["section"]}</b><br>'
-                    f'<small>{s["source"]} &middot; match {pct}%</small>'
+                    f'<div class="src"><b>{html.escape(s["section"])}</b><br>'
+                    f'<small>{html.escape(s["source"])} &middot; match {pct}%</small>'
                     f'<div class="bar"><div style="width:{pct}%"></div></div></div>',
                     unsafe_allow_html=True,
                 )
 
 
+# ---------- Header ----------
+st.markdown(
+    '<div class="hero"><h1>Runbook AI</h1>'
+    "<p>An IT helpdesk assistant that answers only from your documents "
+    "and shows its sources.</p></div>",
+    unsafe_allow_html=True,
+)
+
+try:
+    retriever = get_retriever()
+except Exception:
+    st.error("Could not load the document library. Delete the data/index folder "
+             "and refresh. If that does not help, check that Ollama is running.")
+    st.stop()
+
+for kind, text in st.session_state.notices:
+    (st.success if kind == "ok" else st.error)(text)
+st.session_state.notices = []
+
 # ---------- Sidebar ----------
 with st.sidebar:
+    st.header("Your documents")
+    files = st.file_uploader(
+        "Add PDF, DOCX, TXT or MD files (max 10 MB each)",
+        type=UPLOAD_TYPES,
+        accept_multiple_files=True,
+        key=f"uploader_{st.session_state.uploader_n}",
+    )
+    if files and st.button("Index selected files", type="primary",
+                           use_container_width=True):
+        for f in files:
+            started = time.perf_counter()
+            try:
+                with st.spinner(f"Reading and indexing {f.name}..."):
+                    chunks = ingest_bytes(f.getvalue(), f.name)
+                    source = chunks[0].source
+                    retriever.replace_source(source, chunks)
+                    retriever.save(INDEX_DIR)
+                secs = time.perf_counter() - started
+                st.session_state.notices.append(
+                    ("ok", f"{source}: {len(chunks)} chunks indexed in {secs:.1f}s"))
+            except IngestError as err:
+                st.session_state.notices.append(("err", f"{f.name}: {err}"))
+            except Exception:
+                st.session_state.notices.append(
+                    ("err", f"{f.name}: indexing failed. Is Ollama running?"))
+        st.session_state.uploader_n += 1    # clears the uploader box
+        st.rerun()
+
+    library = retriever.sources()
+    if library:
+        for name, count in library.items():
+            left, right = st.columns([5, 1])
+            left.text(f"{name} ({count} chunks)")
+            if right.button("✕", key=f"del_{name}", help=f"Remove {name}"):
+                retriever.remove_source(name)
+                retriever.save(INDEX_DIR)
+                st.rerun()
+    else:
+        st.caption("No documents yet. Upload one above.")
+
+    st.divider()
     st.header("Try asking")
     for i, example in enumerate(EXAMPLES):
         if st.button(example, key=f"ex{i}", use_container_width=True):
@@ -76,28 +152,15 @@ with st.sidebar:
     st.caption(f"Embedding model: {EMBED_MODEL}")
     st.caption("Runs fully on this computer. Nothing is sent online.")
 
-# ---------- Main page ----------
-st.markdown(
-    '<div class="hero"><h1>Runbook AI</h1>'
-    "<p>An IT helpdesk assistant that answers only from your IT guides "
-    "and shows its sources.</p></div>",
-    unsafe_allow_html=True,
-)
+# ---------- Chat ----------
+has_documents = bool(retriever.sources())
 
-try:
-    retriever = get_retriever()
-except Exception:
-    st.error("Could not reach the local AI engine. Is Ollama running? "
-             "Open the Ollama app, then refresh this page.")
-    st.stop()
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-if not st.session_state.messages:
-    st.info("Ask about VPN, passwords or printers, or pick an example "
-            "from the sidebar. If the guides don't contain the answer, "
-            "I will say so instead of guessing.")
+if not has_documents:
+    st.info("Upload a document in the sidebar to get started.")
+elif not st.session_state.messages:
+    st.info("Ask a question about your documents, or pick an example from the "
+            "sidebar. If the documents don't contain the answer, I will say so "
+            "instead of guessing.")
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"], avatar=AVATARS[msg["role"]]):
@@ -106,7 +169,7 @@ for msg in st.session_state.messages:
         else:
             render_assistant(msg)
 
-prompt = st.chat_input("Ask an IT question...")
+prompt = st.chat_input("Ask a question...", disabled=not has_documents)
 if "pending" in st.session_state:
     prompt = st.session_state.pop("pending")
 
@@ -117,7 +180,7 @@ if prompt:
 
     with st.chat_message("assistant", avatar=AVATARS["assistant"]):
         try:
-            with st.spinner("Searching the guides and writing an answer..."):
+            with st.spinner("Searching the documents and writing an answer..."):
                 result = answer_question(prompt, retriever)
             msg = {
                 "role": "assistant",
