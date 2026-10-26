@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from runbook_ai.chunker import Chunk
 from runbook_ai.search import Retriever
@@ -37,6 +36,40 @@ def test_results_are_sorted_best_first():
     assert scores == sorted(scores, reverse=True)
 
 
-def test_empty_chunks_rejected():
-    with pytest.raises(ValueError):
-        Retriever([], embed_fn=fake_embed)
+def test_empty_retriever_returns_nothing():
+    assert Retriever(embed_fn=fake_embed).search("vpn") == []
+
+
+def test_add_chunks_updates_the_library():
+    r = Retriever(embed_fn=fake_embed)
+    r.add_chunks(CHUNKS)
+    assert r.sources() == {"vpn.md": 1, "pw.md": 1, "printer.md": 1}
+
+
+def test_remove_source():
+    r = Retriever(CHUNKS, embed_fn=fake_embed)
+    assert r.remove_source("vpn.md") == 1
+    assert "vpn.md" not in r.sources()
+    assert r.search("printer", k=1)[0][0].source == "printer.md"
+
+
+def test_removing_everything_leaves_an_empty_index():
+    r = Retriever(CHUNKS, embed_fn=fake_embed)
+    for name in list(r.sources()):
+        r.remove_source(name)
+    assert r.search("vpn") == []
+
+
+def test_replace_source_swaps_old_for_new():
+    r = Retriever(CHUNKS, embed_fn=fake_embed)
+    r.replace_source("vpn.md", [Chunk("vpn.md", "New", "vpn reconnect steps")])
+    assert len(r.chunks) == 3
+    assert all("open the vpn client" not in c.text for c in r.chunks)
+
+
+def test_save_and_load_roundtrip(tmp_path):
+    r = Retriever(CHUNKS, embed_fn=fake_embed)
+    r.save(tmp_path)
+    loaded = Retriever.load(tmp_path, embed_fn=fake_embed)
+    assert [c.text for c in loaded.chunks] == [c.text for c in CHUNKS]
+    assert loaded.search("printer", k=1)[0][0].source == "printer.md"
