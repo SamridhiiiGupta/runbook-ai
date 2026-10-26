@@ -115,7 +115,7 @@ if prompt:
     with st.chat_message("user", avatar=AVATARS["user"]):
         st.markdown(prompt)
 
-    with st.chat_message("assistant"):
+    with st.chat_message("assistant", avatar=AVATARS["assistant"]):
         try:
             with st.spinner("Searching the guides and writing an answer..."):
                 result = answer_question(prompt, retriever)
